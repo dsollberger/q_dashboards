@@ -1,0 +1,129 @@
+---
+title: "Activity 3"
+format: 
+  dashboard:
+    orientation: columns
+    scrolling: true
+    theme: cerulean
+server: shiny
+---
+
+```{r}
+#| context: setup
+#| message: false
+#| warning: false
+#| echo: false
+
+library("bslib")
+library("bsicons")
+library("sf")
+library("shiny")
+library("tidyverse")
+
+color_1 <- "#E77500"
+color_2 <- "#121212"
+
+bee_data   <- readr::read_csv("bee_data.csv")
+nj_map     <- readr::read_rds("nj_map.rds")
+nj_plot    <- readr::read_rds("nj_plot.rds")
+states_shp <- readr::read_rds("us_states_shp.rds")
+```
+
+## {.sidebar}
+
+```{r}
+selectInput(
+  "state_choice",
+  "Choose a state:",
+  choices = unique(bee_data$State)
+)
+```
+
+```{r}
+sliderInput(
+  "year_choice", "Choose a year:",
+  min = 2015, max = 2023, step = 1,
+  value = 2023,
+)
+```
+
+```{r}
+#| context: server
+output$state_plot <- renderPlot({
+  bee_data |> 
+  filter(State == "NEW JERSEY") |>
+  mutate(num_colonies = Value / 1e3) |>
+  mutate(year_color = ifelse(Year == "2023",
+         TRUE, FALSE)) |>
+  ggplot(aes(x = factor(Year), y = num_colonies)) +
+  geom_bar(aes(fill = year_color),
+           color = "#121212", ,
+           stat = "identity") +
+  labs(title = paste0(str_to_title("New Jersey")),
+       subtitle = "Survey of bee colonies",
+       caption = "source: USDA NASS",
+       x = "year",
+       y = "bee colonies (in thousands)") +
+  scale_fill_manual(values = c("#121212", "#E77500")) +
+  theme_minimal() +
+  theme(legend.position = "none")
+})
+
+
+  # states_shp |>
+  #   ggplot() +
+  #   geom_sf(aes(fill = this_selection)) +
+  #   labs(title = "USA Map"),
+  #        caption = "DSLC") +
+  #   scale_fill_manual(values = c(color_1, "gray80")) +
+  #   theme_minimal() +
+  #   theme(axis.title.x = element_blank(),
+  #         axis.text.x  = element_blank(),
+  #         axis.ticks.x = element_blank(),
+  #         axis.title.y = element_blank(),
+  #         axis.text.y  = element_blank(),
+  #         axis.ticks.y = element_blank(),
+  #         legend.position = "none")
+
+
+output$state_choice <- renderText({input$state_choice})
+
+```
+
+
+## Column 1
+
+### Main Chart (bar chart)
+
+```{r}
+#| title: Historical State Data
+plotOutput("state_plot")
+```
+
+
+## Column 2
+
+### State Selection
+
+::: {.valuebox icon="award-fill" color="#E77500"}
+`r textOutput("state_choice")`
+:::
+
+### Year Selection
+
+::: {.valuebox icon="calendar-fill" color="#E77500"}
+Year
+:::
+
+### Colony Count
+
+::: {.valuebox icon="bug" color="#E77500"}
+Colonies
+:::
+
+### Map Inset
+
+```{r}
+#| title: State Selected
+
+```

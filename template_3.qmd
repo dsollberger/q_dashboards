@@ -1,0 +1,184 @@
+---
+title: "Activity 4"
+format: 
+  dashboard:
+    orientation: columns
+    scrolling: true
+    theme: cerulean
+server: shiny
+---
+
+```{r}
+#| context: setup
+#| message: false
+#| warning: false
+#| echo: false
+
+library("bslib")
+library("bsicons")
+library("sf")
+library("shiny")
+library("tidyverse")
+
+color_1 <- "#E77500"
+color_2 <- "#121212"
+
+bee_data   <- readr::read_csv("bee_data.csv")
+nj_map     <- readr::read_rds("nj_map.rds")
+nj_plot    <- readr::read_rds("nj_plot.rds")
+states_shp <- readr::read_rds("us_states_shp.rds")
+```
+
+# Scene
+
+## News Articles
+
+### Article 1
+
+![Time](images/bee_news_1.png)
+
+### Article 2
+
+![ABC](images/bee_news_2.png)
+
+# States
+
+## {.sidebar}
+
+```{r}
+selectInput(
+  "state_choice",
+  "Choose a state:",
+  choices = unique(bee_data$State)
+)
+```
+
+```{r}
+sliderInput(
+  "year_choice", "Choose a year:",
+  min = 2015, max = 2023, step = 1,
+  value = 2023,
+)
+```
+
+```{r}
+#| context: server
+output$state_plot <- renderPlot({
+  bee_data |> 
+  filter(State == "NEW JERSEY") |>
+  mutate(num_colonies = Value / 1e3) |>
+  mutate(year_color = ifelse(Year == "2023",
+         TRUE, FALSE)) |>
+  ggplot(aes(x = factor(Year), y = num_colonies)) +
+  geom_bar(aes(fill = year_color),
+           color = "#121212", ,
+           stat = "identity") +
+  labs(title = paste0(str_to_title("New Jersey")),
+       subtitle = "Survey of bee colonies",
+       caption = "source: USDA NASS",
+       x = "year",
+       y = "bee colonies (in thousands)") +
+  scale_fill_manual(values = c("#121212", "#E77500")) +
+  theme_minimal() +
+  theme(legend.position = "none")
+})
+
+output$state_map <- renderPlot({
+  states_shp |>
+    mutate(this_selection = ifelse(
+      NAME == str_to_title("NEW JERSEY"),
+      "focus", "other states")) |>
+    ggplot() +
+    geom_sf(fill = "#E77500") +
+    labs(title = paste0(str_to_title("New Jersey")),
+         caption = "DSLC") +
+    scale_fill_manual(values = c(color_1, "gray80")) +
+    theme_minimal() +
+    theme(axis.title.x = element_blank(),
+          axis.text.x  = element_blank(),
+          axis.ticks.x = element_blank(),
+          axis.title.y = element_blank(),
+          axis.text.y  = element_blank(),
+          axis.ticks.y = element_blank(),
+          legend.position = "none")
+})
+
+output$num_colonies <- renderText({
+  bee_data |>
+    filter(State == "NEW JERSEY") |>
+    filter(Year == "2023") |>
+    pull(Value)
+})
+
+output$state_choice <- renderText({input$state_choice})
+output$year_choice <- renderText({input$year_choice})
+```
+
+
+## Main Card
+
+### Main Chart (bar chart)
+
+```{r}
+#| title: Historical State Data
+plotOutput("state_plot")
+```
+
+
+## Auxillary Cards
+
+### State Selection
+
+::: {.valuebox icon="award-fill" color="#E77500"}
+`r textOutput("state_choice")`
+:::
+
+### Year Selection
+
+::: {.valuebox icon="calendar-fill" color="#E77500"}
+`r textOutput("year_choice")`
+:::
+
+### Colony Count
+
+::: {.valuebox icon="bug" color="#E77500"}
+Number of bee colonies:
+`r textOutput("num_colonies")`
+:::
+
+### Map Inset
+
+```{r}
+#| title: State Selected
+plotOutput("state_map")
+```
+
+# Data
+
+## USDA NASS
+
+Our data come from the Quick Stats at [USDA NASS](https://www.nass.usda.gov/) (United States Department of Agriculture National Agricultural Statistics Service).  Users can access a subset of the data through dropdown menus.  For replicability, I list my selections here
+
+![USDA NASS Quick Stats](images/bee_search_criteria.png)
+
+## Selections
+
+* **Commodity:**
+
+    * **Program:** SURVEY
+    * **Sector:** ANIMALS & PRODUCTS
+    * **Group:** SPECIALTY
+    * **Commodity:** HONEY
+    * **Category:** INVENTORY
+    * **Data item:** HONEY, BEE COLONIES - INVENTORY, MEASURED IN COLONIES
+    
+* **Location:**
+
+    * **Geographic Level:** STATE
+    * **State:** [leave unselected for all states]
+    
+* **Time:**
+
+    * **Year:** [selected 2014 to 2024 to obtain about a decade of data]
+    * **Period Type:** ANNUAL (note: the "annual" measurements were done by each state, while other granularity might not be available for all states)
+    * **Period:** MARKETING YEAR

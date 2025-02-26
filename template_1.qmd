@@ -1,0 +1,55 @@
+---
+title: "Activity 2"
+format: 
+  dashboard:
+    orientation: columns
+---
+
+```{r}
+#| message: false
+#| warning: false
+#| echo: false
+
+library("bslib")
+library("bsicons")
+library("sf")
+library("tidyverse")
+
+color_1 <- "#E77500"
+color_2 <- "#121212"
+
+bee_data   <- readr::read_csv("bee_data.csv")
+nj_map     <- readr::read_rds("nj_map.rds")
+nj_plot    <- readr::read_rds("nj_plot.rds")
+states_shp <- readr::read_rds("us_states_shp.rds")
+```
+
+
+## Column 1
+
+### Row 1
+
+```{r}
+#| title: Bar Chart
+nj_plot
+```
+
+### Row 2
+
+column 1, row 2
+
+## Column 2
+
+### Row 1
+
+::: {.valuebox icon="award-fill" color="#E77500"}
+NEW JERSEY
+:::
+
+### Row 2
+
+column 2, row 2
+
+### Row 3
+
+column 2, row 3
